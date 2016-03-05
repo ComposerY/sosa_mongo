@@ -1,0 +1,17 @@
+{
+  "name": "sosa_mongo",
+  "version": "0.0.0",
+  "description": "Simple Object Storage Abstraction, mongo version",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "author": "Carlos Rodriguez <carlos@s8f.org> (http://s8f.org/)",
+  "license": "MIT",
+  "dependencies": {
+    "sosa": "~1.0.0"
+  },
+  "devDependencies": {
+    "mongodb": "^2.1.7"
+  }
+}
