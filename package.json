@@ -1,6 +1,6 @@
 {
   "name": "sosa_mongo",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Simple Object Storage Abstraction, mongo version",
   "main": "index.js",
   "scripts": {

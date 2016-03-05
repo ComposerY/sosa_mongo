@@ -15,7 +15,7 @@ module.exports = function (coll_name, backend_options) {
   }
 
   var coll = db.collection(coll_name);
-  
+
   function toObjId (id) {
     if (backend_options.key_prefix && backend_options.key_prefix.length) {
       return hash(backend_options.key_prefix) + '__' + hash(id);
