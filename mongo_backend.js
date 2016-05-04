@@ -6,8 +6,6 @@ module.exports = function (coll_name, backend_options) {
   if (!backend_options.db) throw new Error('must pass a node-mongodb-native db with backend_options.db');
   var db = backend_options.db;
 
-  if (typeof backend_options.hashKeys === 'undefined') backend_options.hashKeys = false;
-
   function escapeBase64 (str) {
     return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   }
