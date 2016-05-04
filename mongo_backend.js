@@ -6,35 +6,35 @@ module.exports = function (coll_name, backend_options) {
   if (!backend_options.db) throw new Error('must pass a node-mongodb-native db with backend_options.db');
   var db = backend_options.db;
 
-  function hash (obj) {
-    return crypto.createHash('sha1')
-      .update(JSON.stringify(obj))
-      .digest('base64')
-      .replace(/[\+\/=]/g, '')
-      .substring(12);
+  if (typeof backend_options.hashKeys === 'undefined') backend_options.hashKeys = false;
+
+  function escapeBase64 (str) {
+    return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   }
 
-  var coll = db.collection(coll_name);
-
-  function toObjId (id) {
-    if (backend_options.key_prefix && backend_options.key_prefix.length) {
-      return hash(backend_options.key_prefix) + '__' + hash(id);
-    }
-    return hash(id);
+  function hash (id) {
+    return escapeBase64(crypto.createHash('sha1').update(id).digest('base64'))
   }
+
+  var coll_path = coll_name;
+  if (backend_options.key_prefix && backend_options.key_prefix.length) {
+    coll_path += '.' + backend_options.key_prefix.map(hash).join('.')
+  }
+
+  var coll = db.collection(coll_path);
 
   return {
     load: function (id, opts, cb) {
       opts.fields || (opts.fields = {});
       opts.fields._id = 0;
-      coll.findOne({_id: toObjId(id)}, opts, cb);
+      coll.findOne({_id: id}, opts, cb);
     },
     save: function (id, obj, opts, cb) {
       if (typeof opts.upsert === 'undefined') opts.upsert = true;
       if (typeof opts.projection === 'undefined') opts.projection = {};
       if (typeof opts.projection._id === 'undefined') opts.projection._id = 0;
       if (typeof opts.returnOriginal === 'undefined') opts.returnOriginal = false;
-      coll.findOneAndReplace({_id: toObjId(id)}, obj, opts, function (err, doc) {
+      coll.findOneAndReplace({_id: id}, obj, opts, function (err, doc) {
         cb(err, doc && doc.value || null);
       });
     },
@@ -43,7 +43,7 @@ module.exports = function (coll_name, backend_options) {
       this.load(id, {}, function (err, obj) {
         if (err) return cb(err);
         if (!obj) return cb(null, null);
-        coll.deleteOne({_id: toObjId(id)}, opts, function (err) {
+        coll.deleteOne({_id: id}, opts, function (err) {
           if (err) return cb(err);
           cb(null, obj);
         });
@@ -51,10 +51,6 @@ module.exports = function (coll_name, backend_options) {
     },
     select: function (opts, cb) {
       if (typeof opts.query === 'undefined') opts.query = {};
-      if (backend_options.key_prefix && backend_options.key_prefix.length) {
-        // use an indexed regex to restrict query to key prefix.
-        opts.query._id = {'$regex': new RegExp('^' + hash(backend_options.key_prefix) + '__')};
-      }
       var cursor = coll.find(opts.query);
       if (typeof opts.project === 'undefined') opts.project = {};
       if (typeof opts.project._id === 'undefined') opts.project._id = 0;
