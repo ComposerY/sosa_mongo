@@ -23,16 +23,19 @@ module.exports = function (coll_name, backend_options) {
 
   return {
     load: function (id, opts, cb) {
-      opts.fields || (opts.fields = {});
-      opts.fields._id = 0;
-      coll.findOne({_id: id}, opts, cb);
+      coll.findOne({_id: id}, opts, function (err, doc) {
+        if (err) return cb(err)
+        if (doc) delete doc._id
+        cb(null, doc)
+      });
     },
     save: function (id, obj, opts, cb) {
       if (typeof opts.upsert === 'undefined') opts.upsert = true;
-      if (typeof opts.projection === 'undefined') opts.projection = {};
-      if (typeof opts.projection._id === 'undefined') opts.projection._id = 0;
       if (typeof opts.returnOriginal === 'undefined') opts.returnOriginal = false;
+      obj._id = id
       coll.findOneAndReplace({_id: id}, obj, opts, function (err, doc) {
+        if (doc && doc.value) delete doc.value._id
+        delete obj._id
         cb(err, doc && doc.value || null);
       });
     },
@@ -50,15 +53,20 @@ module.exports = function (coll_name, backend_options) {
     select: function (opts, cb) {
       if (typeof opts.query === 'undefined') opts.query = {};
       var cursor = coll.find(opts.query);
-      if (typeof opts.project === 'undefined') opts.project = {};
-      if (typeof opts.project._id === 'undefined') opts.project._id = 0;
-      cursor = cursor.project(opts.project);
+      if (typeof opts.project === 'object') cursor = cursor.project(opts.project);
       if (typeof opts.comment === 'string') cursor = cursor.comment(opts.comment);
       if (typeof opts.hint === 'object') cursor = cursor.hint(opts.hint);
       if (typeof opts.limit === 'number') cursor = cursor.limit(opts.limit);
       if (typeof opts.skip === 'number') cursor = cursor.skip(opts.skip);
       if (typeof opts.sort === 'object') cursor = cursor.sort(opts.sort);
-      cursor.toArray(cb);
+      cursor.toArray(function (err, docs) {
+        if (err) return cb(err)
+        docs = docs.map(function (doc) {
+          delete doc._id
+          return doc
+        })
+        cb(null, docs)
+      })
     }
   };
 };
