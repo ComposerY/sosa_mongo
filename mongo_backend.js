@@ -30,14 +30,15 @@ module.exports = function (coll_name, backend_options) {
       });
     },
     save: function (id, obj, opts, cb) {
-      if (typeof opts.upsert === 'undefined') opts.upsert = true;
-      if (typeof opts.returnOriginal === 'undefined') opts.returnOriginal = false;
-      obj._id = id
-      coll.findOneAndReplace({_id: id}, obj, opts, function (err, doc) {
-        if (doc && doc.value) delete doc.value._id
-        delete obj._id
-        cb(err, doc && doc.value || null);
-      });
+      var tmp_obj = JSON.parse(JSON.stringify(obj))
+      tmp_obj._id = id
+      coll.save(tmp_obj, function (err, result) {
+        var doc = result.upserted
+        if (doc) {
+          delete doc._id
+        }
+        cb(err, doc)
+      })
     },
     destroy: function (id, opts, cb) {
       if (typeof opts.w === 'undefined') opts.w = 1;
