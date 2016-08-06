@@ -33,7 +33,7 @@ module.exports = function (coll_name, backend_options) {
       var tmp_obj = JSON.parse(JSON.stringify(obj))
       tmp_obj._id = id
       coll.save(tmp_obj, function (err, result) {
-        var doc = result.upserted
+        var doc = result && result.upserted
         if (doc) {
           delete doc._id
         }
